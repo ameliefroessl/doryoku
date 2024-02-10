@@ -1,4 +1,3 @@
-# Doryoku
+# Puzzles
 
-**Doryoku** means endevour in Japanese. That's exactly what this repository is about. My endevour to learning Rust. :) 
-
+In order to learn Rust, I am solving some AOC puzzles.
