@@ -8,6 +8,12 @@ pub fn run(input_path: &str) {
 
 // solve the puzzle
 // this puzzle tries to solve the puzzle outlined in AOC 2023 day 3
+
+// the idea is to iterate over each element in the matrix. As soon as we hit a number char,
+// we start testing to see if the char is a part number (one of its neighbors is a symbol),
+// we continue testing for precending char in the row until we've reached the end of a number.
+// if the number (possible stretching across multiple indexes) is a part_number we add it to
+// the sum, otherwise we drop it.
 fn solve(input_path: &str) -> u32 {
     let input: String = read_file(input_path);
     let char_matrix = parse_input(&input);
@@ -17,10 +23,14 @@ fn solve(input_path: &str) -> u32 {
         let mut current_number: Vec<u32> = Vec::new();
         let mut is_part: bool = false;
         for (col_i, col) in row.iter().enumerate() {
+            // if we found a numeric number, we add it to our current number
+            // and check if this char is a part number
             if col.is_numeric() {
                 current_number.push(col.to_string().parse().unwrap());
                 is_part = is_part || is_part_number(row_i, col_i, &char_matrix);
             }
+            // if we hit the end of a number or the end of the row and the current number
+            // is a part number, then we calculate a gear ration.
             if (!col.is_numeric() || col_i == row.len() - 1) && current_number.len() > 0 {
                 if is_part {
                     let mut numerical_value: u32 = 0;
@@ -33,6 +43,7 @@ fn solve(input_path: &str) -> u32 {
 
                     sum += numerical_value;
                 }
+                // clear
                 current_number = Vec::new();
                 is_part = false;
             }
@@ -55,7 +66,7 @@ fn parse_input(input: &str) -> Vec<Vec<char>> {
 }
 
 // check if the element at row/col index is a part number
-// a part number one of the 8 touching squares around it is a symbol
+// a part number is a char where one of the 8 touching squares around it is a symbol
 fn is_part_number(row: usize, col: usize, matrix: &Vec<Vec<char>>) -> bool {
     let rows = matrix.len();
     let cols = matrix[0].len();
