@@ -1,14 +1,157 @@
+use std::collections::HashSet;
+
 use puzzles::utils::read_file;
 
 // main entrypoint to puzzle_3
 pub fn run(input_path: &str) {
     let answer = solve(input_path);
-    print!("The answer for puzzle 3 is: {answer}.");
+    println!("The answer for puzzle 3 part 1 is: {answer}.");
+
+    let answer = solve_part_2(input_path);
+    println!("The answer for puzzle 3 part 2 is: {answer}.");
+}
+
+struct CharNumber {
+    row: usize,
+    cols: Vec<usize>,
+    numerical_value: u32,
+}
+
+fn solve_part_2(input_path: &str) -> u32 {
+    let input: String = read_file(input_path);
+    let char_matrix = parse_input(&input);
+
+    let mut char_numbers: Vec<CharNumber> = Vec::new();
+
+    // let mut sum: u32 = 0;
+    for (row_i, row) in char_matrix.iter().enumerate() {
+        let mut current_number: Vec<u32> = Vec::new();
+        let mut current_cols: Vec<usize> = Vec::new();
+
+        for (col_i, col) in row.iter().enumerate() {
+            // if we found a numeric number, we add it to our current number
+            if col.is_numeric() {
+                current_number.push(col.to_string().parse().unwrap());
+                current_cols.push(col_i);
+            }
+            // if we hit the end of a number or the end of the row and the current number
+            // is a part number, then we calculate the numerical value from it and pass it to the sum.
+            if (!col.is_numeric() || col_i == row.len() - 1) && current_number.len() > 0 {
+                let numerical_value = numerical_value(&current_number);
+                char_numbers.push(CharNumber {
+                    row: row_i,
+                    cols: current_cols,
+                    numerical_value: numerical_value,
+                });
+                // clear
+                current_number = Vec::new();
+                current_cols = Vec::new();
+            }
+        }
+    }
+
+    // fill the digital matrix
+    let mut digital_matrix: Vec<Vec<u32>> = vec![vec![0; char_matrix[0].len()]; char_matrix.len()];
+    fill_digital_matrix(&char_numbers, &mut digital_matrix);
+
+    let gears = get_gears(&digital_matrix, &char_matrix);
+
+    return gears;
+}
+
+fn get_gears(digital_matrix: &Vec<Vec<u32>>, char_matrix: &Vec<Vec<char>>) -> u32 {
+    let mut sum = 0;
+
+    for (row_i, row) in char_matrix.iter().enumerate() {
+        for (col_i, col) in row.iter().enumerate() {
+            // if the element is a symbol, check all the numbers
+            if is_symbol(col) {
+                //check for numers
+                let gear = get_gear(digital_matrix, row_i, col_i);
+
+                sum += gear;
+            }
+        }
+    }
+    return sum;
+}
+
+fn get_gear(matrix: &Vec<Vec<u32>>, row: usize, col: usize) -> u32 {
+    let mut neighbors: HashSet<u32> = HashSet::new();
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+
+    // top
+    if row != 0 {
+        //middle
+        let value = matrix[row - 1][col];
+        update_neighbors(value, &mut neighbors);
+
+        //left
+        if col != 0 {
+            let value = matrix[row - 1][col - 1];
+            update_neighbors(value, &mut neighbors);
+        }
+        //right
+        if col + 1 != cols {
+            let value = matrix[row - 1][col + 1];
+            update_neighbors(value, &mut neighbors);
+        }
+    }
+
+    // left
+    if col != 0 {
+        let value = matrix[row][col - 1];
+        update_neighbors(value, &mut neighbors);
+    }
+
+    //right
+    if col + 1 != cols {
+        let value = matrix[row][col + 1];
+        update_neighbors(value, &mut neighbors);
+    }
+
+    // bottom
+    if row + 1 != rows {
+        //middle
+        let value = matrix[row + 1][col];
+        update_neighbors(value, &mut neighbors);
+        //left
+        if col != 0 {
+            let value = matrix[row + 1][col - 1];
+            update_neighbors(value, &mut neighbors);
+        }
+        //right
+        if col + 1 != cols {
+            let value = matrix[row + 1][col + 1];
+            update_neighbors(value, &mut neighbors);
+        }
+    }
+
+    if neighbors.len() == 2 {
+        let half_gears: Vec<&u32> = neighbors.iter().collect();
+        return half_gears[0] * half_gears[1];
+    } else {
+        return 0;
+    }
+}
+
+fn update_neighbors(value: u32, neighbors: &mut HashSet<u32>) {
+    if value > 0 && !neighbors.contains(&value) {
+        neighbors.insert(value);
+    }
+}
+
+fn fill_digital_matrix(char_numbers: &Vec<CharNumber>, digital_matrix: &mut Vec<Vec<u32>>) {
+    for char_number in char_numbers.iter() {
+        for column in char_number.cols.iter() {
+            digital_matrix[char_number.row][*column] = char_number.numerical_value;
+        }
+    }
 }
 
 // solve the puzzle
 // this puzzle tries to solve the puzzle outlined in AOC 2023 day 3
-
 // the idea is to iterate over each element in the matrix. As soon as we hit a number char,
 // we start testing to see if the char is a part number (one of its neighbors is a symbol),
 // we continue testing for precending char in the row until we've reached the end of a number.
@@ -33,15 +176,7 @@ fn solve(input_path: &str) -> u32 {
             // is a part number, then we calculate a gear ration.
             if (!col.is_numeric() || col_i == row.len() - 1) && current_number.len() > 0 {
                 if is_part {
-                    let mut numerical_value: u32 = 0;
-                    for (index, digit) in current_number.iter().enumerate() {
-                        let invers_index = (current_number.len() as u32 - 1) - (index as u32);
-                        let power = 10_u32.pow(invers_index);
-                        let mul = power * digit;
-                        numerical_value += mul;
-                    }
-
-                    sum += numerical_value;
+                    sum += numerical_value(&current_number);
                 }
                 // clear
                 current_number = Vec::new();
@@ -139,4 +274,17 @@ fn is_symbol(character: &char) -> bool {
         return false;
     }
     return true;
+}
+
+// calculate the numerical value of a list of numbers
+// the position of the number in the vector represents its place in the acutal number
+fn numerical_value(characters: &Vec<u32>) -> u32 {
+    let mut numerical_value: u32 = 0;
+    for (index, digit) in characters.iter().enumerate() {
+        let invers_index = (characters.len() as u32 - 1) - (index as u32);
+        let power = 10_u32.pow(invers_index);
+        let mul = power * digit;
+        numerical_value += mul;
+    }
+    return numerical_value;
 }

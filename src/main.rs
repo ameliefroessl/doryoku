@@ -2,6 +2,7 @@
 use std::env;
 // use the puzzle_3 module which is defined in an outside file.
 mod puzzle_3;
+mod puzzle_4;
 
 fn main() {
     println!("Welcome to my puzzle repository!");
@@ -9,7 +10,12 @@ fn main() {
     // get input parameters from the command line args
     let args: Vec<String> = env::args().collect();
 
-    // first argument is the input path
+    match args.len() {
+        0 => println!("Too few arguments!"),
+        _ => {}
+    }
+
+    // first argument is the input path to the puzzle input
     let input_path: &String = &args[1];
 
     // second argument is the puzzle number
