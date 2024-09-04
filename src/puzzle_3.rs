@@ -1,24 +1,27 @@
 use std::collections::HashSet;
 
-use puzzles::utils::read_file;
-
-// main entrypoint to puzzle_3
-pub fn run(input_path: &str) {
-    let answer = solve(input_path);
-    println!("The answer for puzzle 3 part 1 is: {answer}.");
-
-    let answer = solve_part_2(input_path);
-    println!("The answer for puzzle 3 part 2 is: {answer}.");
-}
-
+use crate::utils::{numerical_value, parse_input, read_file};
+// used to hold the data from the input.
 struct CharNumber {
     row: usize,
     cols: Vec<usize>,
     numerical_value: u32,
 }
 
+pub fn run(input_path: &str) -> Result<u64, String> {
+    let answer = solve(input_path);
+    println!("The answer for puzzle 3 part 1 is: {answer}.");
+
+    let answer = solve_part_2(input_path);
+    println!("The answer for puzzle 3 part 2 is: {answer}.");
+
+    // TODO find a way to return u32 and both answers
+    Ok(u64::from(answer))
+}
+
 fn solve_part_2(input_path: &str) -> u32 {
-    let input: String = read_file(input_path);
+    let input: String = read_file(input_path).expect("Could not read input file! ");
+
     let char_matrix = parse_input(&input);
 
     let mut char_numbers: Vec<CharNumber> = Vec::new();
@@ -56,7 +59,7 @@ fn solve_part_2(input_path: &str) -> u32 {
 
     let gears = get_gears(&digital_matrix, &char_matrix);
 
-    return gears;
+    gears
 }
 
 fn get_gears(digital_matrix: &Vec<Vec<u32>>, char_matrix: &Vec<Vec<char>>) -> u32 {
@@ -158,7 +161,7 @@ fn fill_digital_matrix(char_numbers: &Vec<CharNumber>, digital_matrix: &mut Vec<
 // if the number (possible stretching across multiple indexes) is a part_number we add it to
 // the sum, otherwise we drop it.
 fn solve(input_path: &str) -> u32 {
-    let input: String = read_file(input_path);
+    let input: String = read_file(input_path).expect("Could not read input file!");
     let char_matrix = parse_input(&input);
 
     let mut sum: u32 = 0;
@@ -185,19 +188,6 @@ fn solve(input_path: &str) -> u32 {
         }
     }
     sum
-}
-
-// convert the input string to a sparse matrix of the input char
-fn parse_input(input: &str) -> Vec<Vec<char>> {
-    let mut matrix: Vec<Vec<char>> = Vec::new();
-    for line in input.split("\n") {
-        let mut line_characters: Vec<char> = Vec::new();
-        for character in line.chars() {
-            line_characters.push(character);
-        }
-        matrix.push(line_characters);
-    }
-    return matrix;
 }
 
 // check if the element at row/col index is a part number
@@ -274,17 +264,4 @@ fn is_symbol(character: &char) -> bool {
         return false;
     }
     return true;
-}
-
-// calculate the numerical value of a list of numbers
-// the position of the number in the vector represents its place in the acutal number
-fn numerical_value(characters: &Vec<u32>) -> u32 {
-    let mut numerical_value: u32 = 0;
-    for (index, digit) in characters.iter().enumerate() {
-        let invers_index = (characters.len() as u32 - 1) - (index as u32);
-        let power = 10_u32.pow(invers_index);
-        let mul = power * digit;
-        numerical_value += mul;
-    }
-    return numerical_value;
 }
